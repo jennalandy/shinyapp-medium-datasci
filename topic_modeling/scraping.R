@@ -5,30 +5,24 @@ library(tidytext)
 library(topicmodels)
 library(ggplot2)
 library(textcat)
+library(tidyr)
 
 `%notin%` <- Negate(`%in%`)
 
-data = read.csv(paste(path, 'medium_datasci.csv', sep = ''))
+data = read.csv('medium_datasci/medium_datasci.csv')
 
+# -----------------------------
 scrape = function(url) {
   url = toString(url)
   webpage = read_html(url)
   webpage_text = html_nodes(webpage, '.ac') %>% html_text()
   text_lengths = nchar(webpage_text)
   text = webpage_text[text_lengths == max(text_lengths)]
-  text = gsub("’s", " is", text)
-  my_stop = c(
-    'is', 'this', 'and', 'are', 'also', 'data'
-  )
-  for (stop in my_stop) {
-    text = gsub(paste(' ', stop, ' ', sep = ''), ' ', text)
-  }
   return(text)
 }
 
-# https://stackoverflow.com/questions/25905144/
-#removing-overly-common-words-occur-in-more-than-
-#80-of-the-documents-in-r
+# Solution for removing common terms found at:
+# https://stackoverflow.com/questions/25905144/removing-overly-common-words-occur-in-more-than-80-of-the-documents-in-r
 removeCommonTerms <- function (x, pct) {
   stopifnot(inherits(x, c("DocumentTermMatrix", "TermDocumentMatrix")), 
             is.numeric(pct), pct > 0, pct < 1)
@@ -59,8 +53,8 @@ save_urls <- list()
 # Train DTM on a random sample? 
 #---- GET CORPUS ---
 start = as.numeric(Sys.time())
-if ("with_progress.RData" %in% list.files()){
-  load("with_progress.RData")
+if ("with_progress.RData" %in% list.files('topic_modeling')){
+  load("topic_modeling/with_progress.RData")
 } else {
   savei = 0
   urls = data$url
@@ -81,21 +75,49 @@ for (i in savei:length(urls)){
         count = count + 1
       }
       if (count%%1000 == 0) {
-        save.image("with_progress.RData")
+        save.image("topic_modeling/with_progress.RData")
       }
     }
   )
 }
 savei = i
+save.image("topic_modeling/with_progress.RData")
+
+my_stopwords = c(
+  "go",
+  "’s", "'s", # with regular and with fonted apostrophe
+  "don’t", "don't",
+  "thing",
+  "want",
+  "take",
+  "’re", "'re",
+  'is', 'this', 
+  'and', 'are', 'also'
+)
 
 process_corpus <- function(corpus) {
+  # Transform to a corpus
   real_corpus = Corpus(VectorSource(as.vector(corpus)))
-  real_corpus = tm_map(real_corpus, removeWords, stopwords('english'))
+  
+  # Remove Punctuation
   real_corpus = tm_map(real_corpus, content_transformer(removePunctuation))
+  
+  # Remove Numbers
   real_corpus = tm_map(real_corpus, content_transformer(removeNumbers))
+  
+  # Move to Lower Case
   real_corpus = tm_map(real_corpus,  content_transformer(tolower))
+  
+  # Get rid of Whitespace
   real_corpus = tm_map(real_corpus, content_transformer(stripWhitespace))
+  
+  # Remove Stopwords
+  real_corpus = tm_map(real_corpus, removeWords, c(stopwords("english")))
+  
+  # Stem Words
   real_corpus = tm_map(real_corpus, content_transformer(stemDocument), language = "english")
+  
+  # Transform to a document term matrix and remove terms that are in over 50% of articles
   dtm = DocumentTermMatrix(real_corpus, control = list(wordLengths = c(2, Inf)))
   dtm = removeCommonTerms(dtm, 0.5)
   return(dtm)
@@ -116,7 +138,7 @@ corpus = resp['corpus'][[1]]
 dtm = resp['dtm'][[1]]
 urls = resp['urls'][[1]]
 
-save.image("with_corpus.RData")
+save.image("topic_modeling/with_corpus.RData")
 
 # --- Test time to fit LDA on different numbers of documents
 # n = 1000, t = 1.141 min
@@ -126,30 +148,26 @@ save.image("with_corpus.RData")
 n = 3000
 dtm_n = process_corpus(corpus[1:n])
 start = as.numeric(Sys.time())
-lda = LDA(dtm_n, k = 6, control = list(seed = 123))
+lda = LDA(dtm_n, k = 5, control = list(seed = 123))
 end = as.numeric(Sys.time())
 print(paste('n =', toString(n)))
 print(round(end - start, digits = 2)/60)
 # -------------------------------------------
 
-# save.image("~/github/jennalandy/shiny-apps/medium_datasci/with_lda.RData")
+# save.image("topic_modeling/with_lda.RData")
+N = 5000
+dtm_N = process_corpus(corpus[1:N])
+all_topics = data.frame(posterior(lda, dtm_N)[[2]])
+all_topics$document = 1:nrow(all_topics)
+all_topics = gather(all_topics, topic, gamma, X1:X5)
+all_topics$topic = gsub('X', '', all_topics$topic)
 
 topics = tidy(lda, matrix = 'beta')
-
-dont_show = c(
-  "go",
-  "’s",
-  "don't",
-  "thing",
-  "want",
-  "take",
-  "’re"
-)
 
 top_terms <- topics %>%
   filter(term %notin% dont_show) %>%
   group_by(topic) %>%
-  top_n(10, beta) %>%
+  top_n(20, beta) %>%
   ungroup() %>%
   arrange(topic, -beta)
 
@@ -161,40 +179,13 @@ top_terms %>%
   coord_flip() +
   scale_x_reordered()
 
-gamma_matrix = tidy(lda, matrix = 'gamma')
-
-get_topics = function(doc) {
-  doc_matrix = gamma_matrix %>% filter(document == doc)
-  doc_topics = doc_matrix[doc_matrix$gamma > 0.8,]
-  if (dim(doc_topics)[1] == 0){
-    doc_topics = doc_matrix[
-      doc_matrix$gamma == max(doc_matrix$gamma),
-      ]
-    if (dim(doc_topics)[1] == 0){
-      return(-1)
-    }
-  }
-  return(doc_topics$topic)
-}
-
-doc_topics = list()
-for (i in 1:length(corpus)){
-  doc_topics[i] = get_topics(i)
-}
-
-df = data.frame('url' = unlist(urls,use.names=FALSE), 
-                'text' = unlist(corpus,use.names=FALSE),
-                'topic' = unlist(doc_topics,use.names=FALSE))
-
-save.image("with_df.RData")
-
-print(head(df[c('url','topic')]))
-
-write.csv(df[c('url','topic')], 'article_topics.csv')
-
-# url = 'https://medium.com/@otherside914/futures-of-ai-friendly-ai-a65a1f7c7a31'
-# url = 'https://medium.com/@sanparithmarukatat/a-i-%E0%B8%AA%E0%B8%A3%E0%B9%89%E0%B8%B2%E0%B8%87%E0%B8%A0%E0%B8%B2%E0%B8%A9%E0%B8%B2%E0%B9%80%E0%B8%AD%E0%B8%87-e85ebe71891a'
-# url = 'https://millennials-times.com/creativeflower-eng-3ed56c6bc8b7'
-# url = 'https://medium.com/neworder/os-melhores-links-de-julho-cameras-vintage-google-glass-star-wars-hote-4574f25c9d3f'
-# url = 'https://towardsdatascience.com/the-future-of-ai-redefining-how-we-imagine-596d5747da2e'
-# url = 'https://medium.com/@annanaveed/digital-hr-for-healthcare-83100c0767f4'
+doc_topics = data.frame(posterior(lda, dtm)[[2]])
+doc_topics$document = 1:nrow(doc_topics)
+doc_topics$url = unlist(urls[1:nrow(doc_topics)], use.names=FALSE)
+doc_topics = gather(doc_topics, topic, gamma, X1:X5)
+doc_topics$topic = gsub('X', '', doc_topics$topic)
+write.csv(
+  doc_topics[c('url','topic','gamma')], 
+  'article_topics.csv',
+  row.names=FALSE
+)

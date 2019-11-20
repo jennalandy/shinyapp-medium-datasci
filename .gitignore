@@ -2,3 +2,6 @@
 *.Rhistory*
 *.csv
 *.RData
+.Rproj.user
+plots.R
+*.png
