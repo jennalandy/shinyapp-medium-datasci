@@ -187,6 +187,19 @@ topic_map <- list(
   'topic_vis' = 'Data Visualization'
 )
 
+topic_color_map <- list(
+  'Deep Learning, Neural Networks' = 'red',
+  'Machine Learning, Algorithms' = 'orange',
+  'App and Software Development, Chat Bots' = 'green',
+  'Artificial Intelligence, Human Computer Interaction' = 'blue',
+  'Industry, Business' = 'purple',
+  'Data Visualization' = 'black'
+)
+
+topic_color_key = c('topic_dl_nn','topic_ml_algo','topic_app_bot',
+                    'topic_ai_hci','topic_ind','topic_vis')
+topic_color_value = c('red','orange','green','blue','purple','black')
+
 plot_topic_data <- function(data_all, input_topics, response, agg = 'avg', range = 'month') {
   sub = subset_data(data_all, input_topics)
   first = TRUE
@@ -258,11 +271,17 @@ plot_topic_data <- function(data_all, input_topics, response, agg = 'avg', range
   # drop last time interval because it was not complete
   # (i.e. don't have the full last month of articles)
   range_dat = range_dat[1:(nrow(range_dat)-1), ]
+  l = unlist(topic_map[input_topics], use.names=FALSE)
+  c = unlist(topic_color_map[l], use.names=FALSE)
   
   ggplot(data = range_dat, aes(x = order, y = !!rlang::sym(name), col = topic_label)) + 
     geom_line() + 
     xlab(paste(toTitleCase(range), "s since August 1, 2017", sep = '')) + 
     ylab(ylab) +
     ggtitle(title) + 
-    labs(color = "Topic")
+    labs(color = "Topic") +
+    scale_color_manual(
+      labels = l, 
+      values = c
+    )
 }

@@ -1,4 +1,3 @@
-# TODO: constant colors for different topics
 # TODO: about this app/author tab
 # TODO: order authors by avg claps/article
 # TODO: display numbers with commas (445614 as 445,614)
