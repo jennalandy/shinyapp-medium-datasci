@@ -79,8 +79,8 @@ for (i in savei:length(urls)){
       }
     }
   )
+  savei = i
 }
-savei = i
 save.image("topic_modeling/with_progress.RData")
 
 my_stopwords = c(

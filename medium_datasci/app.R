@@ -1,3 +1,9 @@
+# TODO: constant colors for different topics
+# TODO: about this app/author tab
+# TODO: order authors by avg claps/article
+# TODO: display numbers with commas (445614 as 445,614)
+# TODO: column headers for table
+
 library(dplyr)
 library(shiny)
 library(shinythemes)
@@ -108,11 +114,11 @@ server <- function(input, output, session) {
   })
   
   get_recommendations <- reactive({
-    sub = subset_data(data_all, input$interests)
+    sub = subset_data(all_data, input$interests)
     url_recommendations <- sub[order(-sub$claps),]  
 
     author_options = sub$author_url
-    grouped_by_author <- data_all %>% 
+    grouped_by_author <- all_data %>% 
       filter(author_url %in% author_options) %>%
       group_by(.dots = c("author_url","author")) %>% 
       summarize(total_claps = sum(claps))
