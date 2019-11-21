@@ -44,13 +44,6 @@ data <- data[rows, ]
 corpus <- list()
 save_urls <- list()
 
-# 100 takes 2 minutes
-# 1,000 in 23 minutes
-# 10,000 in 226 minutes = 3.76 hours
-# 78,388 in total, expect 784*2 = 1568 minutes = 26 hours, uh oh
-  # - 8 done Monday at 6am
-  # - Should be done on Monday around midnight 
-# Train DTM on a random sample? 
 #---- GET CORPUS ---
 start = as.numeric(Sys.time())
 if ("with_progress.RData" %in% list.files('topic_modeling')){
@@ -140,10 +133,8 @@ urls = resp['urls'][[1]]
 
 save.image("topic_modeling/with_corpus.RData")
 
-# --- Test time to fit LDA on different numbers of documents
-# n = 1000, t = 1.141 min
-# n = 2000, t = 3.165 min
-# n = 3000, t = 5.327 min
+# --- Fit LDA on 3000 documents 
+# (random because we shuffled at the start)
 
 n = 3000
 dtm_n = process_corpus(corpus[1:n])
@@ -154,10 +145,7 @@ print(paste('n =', toString(n)))
 print(round(end - start, digits = 2)/60)
 # -------------------------------------------
 
-# save.image("topic_modeling/with_lda.RData")
-N = 5000
-dtm_N = process_corpus(corpus[1:N])
-all_topics = data.frame(posterior(lda, dtm_N)[[2]])
+all_topics = data.frame(posterior(lda, dtm)[[2]])
 all_topics$document = 1:nrow(all_topics)
 all_topics = gather(all_topics, topic, gamma, X1:X5)
 all_topics$topic = gsub('X', '', all_topics$topic)
@@ -184,6 +172,7 @@ doc_topics$document = 1:nrow(doc_topics)
 doc_topics$url = unlist(urls[1:nrow(doc_topics)], use.names=FALSE)
 doc_topics = gather(doc_topics, topic, gamma, X1:X5)
 doc_topics$topic = gsub('X', '', doc_topics$topic)
+
 write.csv(
   doc_topics[c('url','topic','gamma')], 
   'article_topics.csv',

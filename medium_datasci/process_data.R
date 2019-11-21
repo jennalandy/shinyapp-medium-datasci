@@ -5,7 +5,7 @@ source("app_functions.R")
 
 data = read.csv('medium_datasci.csv')
 drops = c("x1")
-data = data[ , !(names(data) %in% drops)]
+data = data[, !(names(data) %in% drops)]
 
 data$week = format(
   as.Date(paste(data$month,'/',data$day,'/',data$year, sep = ''), '%m/%d/%Y'),
@@ -68,8 +68,6 @@ topic_vis = as.vector(
 )
 data_all['topic_vis'] = rep(0, nrow(data_all))
 data_all[topic_vis,]$topic_vis = 1
-
-names(data_all)[24:29]
 
 write.csv(
   data_all, 

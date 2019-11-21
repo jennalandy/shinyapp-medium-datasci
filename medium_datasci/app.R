@@ -1,6 +1,3 @@
-# TODO: prettier colors
-# TODO: most popular OR most obscure maybe
-
 library(dplyr)
 library(shiny)
 library(shinythemes)
@@ -10,8 +7,6 @@ library(rsconnect)
 
 source("app_functions.R")
 
-# data = open_data()
-# topics = open_topics()
 all_data = open_all_data()
 
 ui <- fluidPage(
@@ -115,6 +110,7 @@ ui <- fluidPage(
 
 # Define server function
 server <- function(input, output, session) {
+  
   # Topics panel
   observe({
     if (input$selectall == 0) return (NULL)
