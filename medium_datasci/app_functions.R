@@ -196,27 +196,29 @@ about_app_panel <- mainPanel(
     "including a selection panel of topics a user may be interested in.",
     "Depending on what is selected, the five most popular related articles and authors will be displayed,",
     "as well as a table of all related articles that can be searched.",
-    "All articles and authors are linked for easy access to the medium articles themselves."
+    "All articles and authors are linked for easy access to the medium content."
   )),
   p(paste(
     "The second panel is to inspect topic popularities over time. Again, the user can",
     "select topics of interest. Here, they can also select what popularity metric to inspect:",
     "claps reflects popularity among readers, while number of articles represents popularity among writers",
-    "(i.e. how many authors want to write on a given topic?).",
-    "Time range and aggregation function are also user-defined."
+    "(i.e. how many authors want to write on a given topic?). Users are also able to inspect the estimated",
+    "reading time of articles across topics and can define the time interval (day, week, or month) and aggregation function (mean or median) used."
   )),
   h4("Process: Web Scraping and Topic Modeling"),
   p(paste(
-    "The tags provided (ai, big data, data science,",
+    "The tags provided in the dataset (ai, big data, data science,",
     "data visualization, deep learning, machine learning, and just 'data')",
-    "are not very specific and I hoped to get some more interesting categories.",
+    "are not very specific and I wanted to get some more interesting categories from users to choose from.",
     "To do this, I performed topic modeling on the full text of each article.",
-    "I first used the urls provided in the dataset to scrape the full text of each article",
-    "using the rvest package. Topics of interest were then determined with latent dirichlet allocation ",
-    "topic modeling using the topicmodels package. LDA was only fit on a random 3,000 articles for the",
-    "sake of time. For the full dataset of 78,388 articles, I recorded its topic distribution (gamma values for each topic."
+    "I first scrapee the full text of each article by accessing the provided url",
+    "using the rvest package. In this process, I only kept articles written in English (checked using the textcat package), both so",
+    "that an English-speaking user would be able to read the recommended articles and also to keep topic modeling in one language.",
+    "Topics of interest were then determined with Latent Dirichlet Allocation",
+    "topic modeling (LDA) using the topicmodels package. LDA was only fit on a random 3,000 articles for the",
+    "sake of time. Then, for each of the 78,388 articles, I recorded its topic distribution (gamma values for each topic)."
   )),
-  p("Code for web scraping, lda modeling, and lda fitting can be found in topic_modeling/scraping.R"),
+  p("Code for web scraping and topic modeling can be found in topic_modeling/scraping.R"),
   p(paste(
     "Below is a plot of the 20 most common words in each topic of the LDA",
     "topic modeling results. I experimented with different numbers of topics,",
@@ -228,39 +230,39 @@ about_app_panel <- mainPanel(
   ),
   p(paste(
     "Putting these topics into context and combining them with the tag information,",
-    "I decided on the following topics of interest:"
+    "I decided on the following topics of interest and their respective conditions:"
   )),
   tags$ol(
-    tags$li("Deep Learning and Neural Networks: topic 1, tag_deep_learning, tag_big_data"),
-    tags$li("Machine Learning and Algorithms: topic 2, tag_macine_learning"),
+    tags$li("Deep Learning and Neural Networks: topic 1, tag_deep_learning, or tag_big_data"),
+    tags$li("Machine Learning and Algorithms: topic 2 or tag_macine_learning"),
     tags$li("App, Software, and Chat Bot Development: topic 3"),
-    tags$li("Artificial Intelligence, Human Computer Interaction: topic 4, tag_ai, tag_artificial_intelligence"),
+    tags$li("Artificial Intelligence, Human Computer Interaction: topic 4, tag_ai, or tag_artificial_intelligence"),
     tags$li("Industry and Business: topic 5"),
     tags$li("Data Visualization: tag_data_visualization")
   ),
   p(paste(
     "I define an article as fitting one of these topics of interest if (a) it",
-    "is tagged appropriately (not applicable for topics 3 and 5) or (b) the gamma",
-    "value associated with its topic is over 0.5."
+    "is tagged appropriately or (b) the gamma",
+    "value associated with with one of its topics is over 0.5."
   )),
-  p("Code for preprocessing of data into topics can be found in process_data.R."),
+  p("Code for preprocessing data into topics can be found in process_data.R."),
   h4("Reflection: Interesting Discoveries"),
   p(paste(
-    "Below are a few intersting discoveries I made in the process of creating",
+    "Below are a few interesting discoveries I made in the process of creating",
     "and playing around with this application."
   )),
   p(paste(
     "Looking at the number of articles across topics, it is clear that machine learning is an all",
     "time favorite among authors. On the other end of the spectrum, deep learning and neural networks",
     "are rarely written about. The number of articles on app, software, and chat bot development has gone down in popularity over",
-    "the past two years while all other topics have increased."
+    "the past two years while the frequency of all other topics have increased."
   )),
   p(paste(
     "On the other hand, when we inspect the median number of claps across topics, machine learning",
-    "is relatively unpopular (typically 5 claps per article), while neural networks were significntly more popular",
-    "(up to 25 claps per article) up until recently, when neural networks lowered down to the level of ML.",
+    "is relatively unpopular (typically 5 claps per article), while up until recently, neural networks were significantly more popular",
+    "(up to 25 claps per article). Over the last three months of the dataset (May - July 2018), neural networks became less popular and has lowered down to the level of ML.",
     "Though it changes throughout the dataset, most recent data indicates that data visualization",
-    "articles are slighlty more popular than the rest, with around 7 claps per article. Articles about industry",
+    "articles are slightly more popular than the rest, with around 7 claps per article. Articles about industry",
     "and business are the least popular, between 1 and 2 claps per article."
   )),
   p(paste(
@@ -283,11 +285,11 @@ topic_map <- list(
 )
 
 topic_color_map <- list(
-  'Deep Learning, Neural Networks' = 'red',
-  'Machine Learning, Algorithms' = 'orange',
-  'App and Software Development, Chat Bots' = 'green',
-  'Artificial Intelligence, Human Computer Interaction' = 'blue',
-  'Industry, Business' = 'purple',
+  'Deep Learning, Neural Networks' = rgb(245, 118, 112, max = 255),
+  'Machine Learning, Algorithms' = rgb(163, 164, 32, max = 255),
+  'App and Software Development, Chat Bots' = rgb(30, 189, 127, max = 255),
+  'Artificial Intelligence, Human Computer Interaction' = rgb(31,177,243, max = 255),
+  'Industry, Business' = rgb(221, 108, 232, max = 255),
   'Data Visualization' = 'black'
 )
 

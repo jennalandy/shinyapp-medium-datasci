@@ -1,4 +1,3 @@
-# TODO: add to about that you checked for english in articles before contiuing
 # TODO: prettier colors
 # TODO: most popular OR most obscure maybe
 
