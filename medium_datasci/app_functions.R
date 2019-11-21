@@ -133,7 +133,7 @@ display_article <- function(articles, i) {
     href = article$url, target = "_bank"
   )
   renderUI({
-    tagList(i, ". ", url, " (", article$claps, " claps)")
+    tagList(i, ". ", url, " (", format(article$claps, big.mark=",",scientific=FALSE), " claps)")
   })
 }
 
@@ -144,7 +144,7 @@ display_author <- function(authors, i) {
     href = author$author_url, target = "_bank"
   )
   renderUI({
-    tagList(i, ". ", url, " (", author$total_claps, " total claps)")
+    tagList(i, ". ", url, " (", format(round(author$mean_claps), big.mark=",",scientific=FALSE), " claps per article)")
   })
 }
 
@@ -231,6 +231,9 @@ plot_topic_data <- function(data_all, input_topics, response, agg = 'avg', range
       num = sum(!is.na(url))
     )
     range_dat <- range_dat[order(range_dat$year, range_dat$month),]
+    range_dat$time <- paste(range_dat$year, range_dat$month)
+    unique_times = unique(range_dat$time)
+    range_dat$order = rep(1:length(unique_times), each = length(input_topics))
   } else if (range == 'day') {
     range_dat <- topic_subs %>% group_by(year,month,day,topic) %>% summarize(
       avg_claps = mean(claps), 
@@ -240,6 +243,9 @@ plot_topic_data <- function(data_all, input_topics, response, agg = 'avg', range
       num = sum(!is.na(url))
     )
     range_dat <- range_dat[order(range_dat$year, range_dat$month, range_dat$day),]
+    range_dat$time <- paste(range_dat$year, range_dat$week, range_dat$day)
+    unique_times = unique(range_dat$time)
+    range_dat$order = rep(1:length(unique_times), each = length(input_topics))
   } else if (range == 'week') {
     range_dat <- topic_subs %>% group_by(year,week,topic) %>% summarize(
       avg_claps = mean(claps), 
@@ -249,9 +255,11 @@ plot_topic_data <- function(data_all, input_topics, response, agg = 'avg', range
       num = sum(!is.na(url))
     )
     range_dat <- range_dat[order(range_dat$year, range_dat$week),]
+    range_dat$time <- paste(range_dat$year, range_dat$week)
+    unique_times = unique(range_dat$time)
+    range_dat$order = rep(1:length(unique_times), each = length(input_topics))
   }
   
-  range_dat['order'] <- 1:nrow(range_dat)
   if (response == 'num') {
     name = 'num'
     ylab = 'Number of Articles'
@@ -270,7 +278,7 @@ plot_topic_data <- function(data_all, input_topics, response, agg = 'avg', range
   print(range_dat$topic_label)
   # drop last time interval because it was not complete
   # (i.e. don't have the full last month of articles)
-  range_dat = range_dat[1:(nrow(range_dat)-1), ]
+  range_dat = range_dat[range_dat$order != max(range_dat$order),]
   l = unlist(topic_map[input_topics], use.names=FALSE)
   c = unlist(topic_color_map[l], use.names=FALSE)
   

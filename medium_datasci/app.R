@@ -1,7 +1,5 @@
 # TODO: about this app/author tab
-# TODO: order authors by avg claps/article
-# TODO: display numbers with commas (445614 as 445,614)
-# TODO: column headers for table
+# TODO: X label time ugh
 
 library(dplyr)
 library(shiny)
@@ -87,6 +85,18 @@ ui <- fluidPage(
           h4("Select a topic of interest to see article visualization!")
         )
       )
+    ),
+    tabPanel(
+      "About",
+      sidebarLayout(
+        sidebarPanel(
+          
+        ),
+        mainPanel(
+          hr()
+          
+        )
+      )
     )
   )
 )
@@ -120,9 +130,9 @@ server <- function(input, output, session) {
     grouped_by_author <- all_data %>% 
       filter(author_url %in% author_options) %>%
       group_by(.dots = c("author_url","author")) %>% 
-      summarize(total_claps = sum(claps))
+      summarize(mean_claps = mean(claps))
     author_recommendations = grouped_by_author[
-      order(-grouped_by_author$total_claps),
+      order(-grouped_by_author$mean_claps),
     ]
     
     output$article1 = display_article(url_recommendations, 1)
@@ -168,11 +178,14 @@ server <- function(input, output, session) {
     articles$link_title = paste(
       "<a href ='", articles$url, "'>", articles$title, "</a>", sep = ''
     )
+    articles$claps = format(articles$claps, big.mark=",",scientific=FALSE)
     
     authors = recommendations['auth_urls'][[1]]
+    show = articles[c('claps','link_title','author')]
+    names(show) = c("Claps", "Article", "Author")
     return(DT::datatable(
-      articles[c('claps','link_title','author')], rownames= FALSE,
-      filter = list('claps', 'desc'), escape = FALSE
+      show, rownames= FALSE,
+      filter = list('Claps', 'desc'), escape = FALSE
     ))
   })
   
