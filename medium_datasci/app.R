@@ -1,5 +1,6 @@
-# TODO: about this app/author tab
-# TODO: X label time ugh
+# TODO: add to about that you checked for english in articles before contiuing
+# TODO: prettier colors
+# TODO: most popular OR most obscure maybe
 
 library(dplyr)
 library(shiny)
@@ -27,7 +28,7 @@ ui <- fluidPage(
           h6("What are you interested in?"),
           actionLink("selectall", "Select All"),
           topic_selection,
-          width = 3
+          width = 4
         ),
         mainPanel(
           conditionalPanel(
@@ -53,7 +54,7 @@ ui <- fluidPage(
       )
     ),
     tabPanel(
-      'Statistics',
+      'Topic Popularity',
       sidebarPanel(
         h6("What are you interested in?"),
         actionLink("plot_selectall", "Select All"),
@@ -83,21 +84,33 @@ ui <- fluidPage(
           input.plot_interests.length == 0)
           ",
           h4("Select a topic of interest to see article visualization!")
-        )
+        ),
+        class = 'plot_panel'
       )
     ),
     tabPanel(
       "About",
       sidebarLayout(
         sidebarPanel(
-          
+          fluidRow(align="center",
+             plotOutput("me", width = '100px',height='100px'),
+             fluidRow(h6("Jenna Landy")),
+             fluidRow(a("Github", href = 'https://github.com/jennalandy/shinyapp-medium-datasci', target='_blank')),
+             fluidRow(a("LinkedIn", href = 'https://www.linkedin.com/in/jenna-landy/', target='_blank')),
+             HTML('<a href="mailto:jlandy@calpoly.edu" target="blank">jlandy@calpoly.edu</a>'),
+            class = 'aboutme'
+          )
         ),
-        mainPanel(
-          hr()
-          
-        )
+        about_app_panel
       )
     )
+  ),
+  column(12, align = 'center', 
+      hr(),
+      a('Created by Jenna Landy ● See Source Code', 
+        href = 'https://github.com/jennalandy/shinyapp-medium-datasci',
+        class = 'footer',
+        target = '_blank')
   )
 )
 
@@ -176,7 +189,7 @@ server <- function(input, output, session) {
     recommendations = get_recommendations()
     articles = recommendations['urls'][[1]]
     articles$link_title = paste(
-      "<a href ='", articles$url, "'>", articles$title, "</a>", sep = ''
+      "<a href ='", articles$url, "' target='_blank'>", articles$title, "</a>", sep = ''
     )
     articles$claps = format(articles$claps, big.mark=",",scientific=FALSE)
     
@@ -196,6 +209,17 @@ server <- function(input, output, session) {
       response = input$var, agg = input$agg, range = input$range
     )
   })
+  
+  # PNGs
+  output$png <- renderImage({
+    filename = normalizePath(file.path("./", "topics_plot.png"))
+    list(src=filename,width = 500,height=500*6.24/7)
+  }, deleteFile = FALSE)
+  
+  output$me <- renderImage({
+    filename = normalizePath(file.path("./", "me.png"))
+    list(src=filename,width = 100,height=100)
+  }, deleteFile = FALSE)
 }
 
 # Create Shiny object

@@ -21,6 +21,15 @@ add_css <- "
   table.dataTable_length label {
     color: white;
   }
+  #topicPlot {
+    margin-bottom: 30px;
+  }
+  .plot_panel {
+    margin-bottom: 30px;
+  }
+  .aboutme {
+    background-color: 'black';
+  }
 "
 
 agg_names = list(
@@ -177,6 +186,92 @@ authors <- fluidRow(
   uiOutput("author5")
 )
 
+# About panel
+
+about_app_panel <- mainPanel(
+  hr(),
+  h4("Purpose: Article Recommendation and Inspection of Topic Popularity"),
+  p(paste(
+    "The first panel of this app acts as a data science article recommendation platform,",
+    "including a selection panel of topics a user may be interested in.",
+    "Depending on what is selected, the five most popular related articles and authors will be displayed,",
+    "as well as a table of all related articles that can be searched.",
+    "All articles and authors are linked for easy access to the medium articles themselves."
+  )),
+  p(paste(
+    "The second panel is to inspect topic popularities over time. Again, the user can",
+    "select topics of interest. Here, they can also select what popularity metric to inspect:",
+    "claps reflects popularity among readers, while number of articles represents popularity among writers",
+    "(i.e. how many authors want to write on a given topic?).",
+    "Time range and aggregation function are also user-defined."
+  )),
+  h4("Process: Web Scraping and Topic Modeling"),
+  p(paste(
+    "The tags provided (ai, big data, data science,",
+    "data visualization, deep learning, machine learning, and just 'data')",
+    "are not very specific and I hoped to get some more interesting categories.",
+    "To do this, I performed topic modeling on the full text of each article.",
+    "I first used the urls provided in the dataset to scrape the full text of each article",
+    "using the rvest package. Topics of interest were then determined with latent dirichlet allocation ",
+    "topic modeling using the topicmodels package. LDA was only fit on a random 3,000 articles for the",
+    "sake of time. For the full dataset of 78,388 articles, I recorded its topic distribution (gamma values for each topic."
+  )),
+  p("Code for web scraping, lda modeling, and lda fitting can be found in topic_modeling/scraping.R"),
+  p(paste(
+    "Below is a plot of the 20 most common words in each topic of the LDA",
+    "topic modeling results. I experimented with different numbers of topics,",
+    "and five seemed to be a happy medium where groups didn't overlap too much",
+    "and there weren't duplicate topics."
+  )),
+  fluidRow(align="center",
+          plotOutput("png", width = '500px',height=paste(500*6.24/7,'px',sep = ''))
+  ),
+  p(paste(
+    "Putting these topics into context and combining them with the tag information,",
+    "I decided on the following topics of interest:"
+  )),
+  tags$ol(
+    tags$li("Deep Learning and Neural Networks: topic 1, tag_deep_learning, tag_big_data"),
+    tags$li("Machine Learning and Algorithms: topic 2, tag_macine_learning"),
+    tags$li("App, Software, and Chat Bot Development: topic 3"),
+    tags$li("Artificial Intelligence, Human Computer Interaction: topic 4, tag_ai, tag_artificial_intelligence"),
+    tags$li("Industry and Business: topic 5"),
+    tags$li("Data Visualization: tag_data_visualization")
+  ),
+  p(paste(
+    "I define an article as fitting one of these topics of interest if (a) it",
+    "is tagged appropriately (not applicable for topics 3 and 5) or (b) the gamma",
+    "value associated with its topic is over 0.5."
+  )),
+  p("Code for preprocessing of data into topics can be found in process_data.R."),
+  h4("Reflection: Interesting Discoveries"),
+  p(paste(
+    "Below are a few intersting discoveries I made in the process of creating",
+    "and playing around with this application."
+  )),
+  p(paste(
+    "Looking at the number of articles across topics, it is clear that machine learning is an all",
+    "time favorite among authors. On the other end of the spectrum, deep learning and neural networks",
+    "are rarely written about. The number of articles on app, software, and chat bot development has gone down in popularity over",
+    "the past two years while all other topics have increased."
+  )),
+  p(paste(
+    "On the other hand, when we inspect the median number of claps across topics, machine learning",
+    "is relatively unpopular (typically 5 claps per article), while neural networks were significntly more popular",
+    "(up to 25 claps per article) up until recently, when neural networks lowered down to the level of ML.",
+    "Though it changes throughout the dataset, most recent data indicates that data visualization",
+    "articles are slighlty more popular than the rest, with around 7 claps per article. Articles about industry",
+    "and business are the least popular, between 1 and 2 claps per article."
+  )),
+  p(paste(
+    "Articles about artificial intelligence, human computer interaction, and data",
+    "visualization are, on average, about 1-2 minutes longer to read than articles on other topics.",
+    "Articles about business and industry are the shortest at around 3.5 minutes to read.",
+    "However, all median reading times are very similar, between 3 and 4 minutes."
+  ))
+)
+
+
 # PLOT!!!
 topic_map <- list(
   'topic_dl_nn' = 'Deep Learning, Neural Networks',
@@ -234,18 +329,38 @@ plot_topic_data <- function(data_all, input_topics, response, agg = 'avg', range
     range_dat$time <- paste(range_dat$year, range_dat$month)
     unique_times = unique(range_dat$time)
     range_dat$order = rep(1:length(unique_times), each = length(input_topics))
-  } else if (range == 'day') {
-    range_dat <- topic_subs %>% group_by(year,month,day,topic) %>% summarize(
-      avg_claps = mean(claps), 
-      med_claps = median(claps),
-      avg_time = mean(reading_time), 
-      med_time = median(reading_time),
-      num = sum(!is.na(url))
+    xticks_breaks = c(2, 5, 8, 11)
+    xticks_labels = c("September 2017", "December 2017", 
+                      "March 2018", 'June 2018'
     )
+  } else if (range == 'day') {
+    topic_subs$time <- paste(topic_subs$year, topic_subs$month, topic_subs$day)
+    range_dat <- topic_subs %>% group_by(time, topic) %>% 
+      summarize(
+        avg_claps = mean(claps), 
+        med_claps = median(claps),
+        avg_time = mean(reading_time), 
+        med_time = median(reading_time),
+        num = sum(!is.na(url))
+      ) %>% ungroup() %>% complete(
+        time, topic, fill = list(
+          avg_claps = 0,
+          med_claps = 0,
+          avg_time = 0,
+          med_time = 0,
+          num = 0
+        )
+      )
+    
+    range_dat = merge(range_dat, unique(topic_subs[c('time','day','month','year')]), by = 'time')
+    
     range_dat <- range_dat[order(range_dat$year, range_dat$month, range_dat$day),]
-    range_dat$time <- paste(range_dat$year, range_dat$week, range_dat$day)
     unique_times = unique(range_dat$time)
     range_dat$order = rep(1:length(unique_times), each = length(input_topics))
+    xticks_breaks = c(32, 123, 213, 305)
+    xticks_labels = c("September 2017", "December 2017", 
+                      "March 2018", 'June 2018'
+    )
   } else if (range == 'week') {
     range_dat <- topic_subs %>% group_by(year,week,topic) %>% summarize(
       avg_claps = mean(claps), 
@@ -258,6 +373,10 @@ plot_topic_data <- function(data_all, input_topics, response, agg = 'avg', range
     range_dat$time <- paste(range_dat$year, range_dat$week)
     unique_times = unique(range_dat$time)
     range_dat$order = rep(1:length(unique_times), each = length(input_topics))
+    xticks_breaks = c(6, 19, 34, 47)
+    xticks_labels = c("September 2017", "December 2017", 
+      "March 2018", 'June 2018'
+    )
   }
   
   if (response == 'num') {
@@ -272,24 +391,22 @@ plot_topic_data <- function(data_all, input_topics, response, agg = 'avg', range
     title = paste(agg_name, var_name, "by", toTitleCase(range))
   }
   
-  print(range_dat[c('topic')])
   range_dat$topic_label = unlist(topic_map[range_dat$topic], use.names=FALSE)
-  print(range_dat$topic)
-  print(range_dat$topic_label)
+  
   # drop last time interval because it was not complete
   # (i.e. don't have the full last month of articles)
   range_dat = range_dat[range_dat$order != max(range_dat$order),]
   l = unlist(topic_map[input_topics], use.names=FALSE)
   c = unlist(topic_color_map[l], use.names=FALSE)
-  
   ggplot(data = range_dat, aes(x = order, y = !!rlang::sym(name), col = topic_label)) + 
     geom_line() + 
-    xlab(paste(toTitleCase(range), "s since August 1, 2017", sep = '')) + 
+    xlab(paste(toTitleCase(range), "s", sep = '')) +
     ylab(ylab) +
     ggtitle(title) + 
     labs(color = "Topic") +
     scale_color_manual(
       labels = l, 
       values = c
-    )
+    ) + 
+    scale_x_continuous(breaks = xticks_breaks, labels=xticks_labels)
 }
