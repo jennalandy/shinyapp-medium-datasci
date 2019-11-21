@@ -4,4 +4,3 @@
 *.RData
 .Rproj.user
 plots.R
-*.png
