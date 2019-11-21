@@ -15,7 +15,7 @@ Code for web scraping, lda modeling, and lda fitting can be found in topic_model
 
 Below is a plot of the 20 most common words in each topic of the LDA topic modeling results. I experimented with different numbers of topics, and five seemed to be a happy medium where groups didn't overlap too much and there weren't duplicate topics.
 
-<img src=./medium_dataci/topics_plot.png width=400 />
+<img src=./medium_dataci/topics_plot.png width=400/>
 
 Putting these topics into context and combining them with the tag information, I decided on the following topics of interest:
 
